@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{env::Env, error::Error, parser, util::intersperse};
+use crate::{env::Env, error::Error, util::intersperse};
 
 pub static QUOTE: &str = "quote";
 pub static TRUE: &str = "#t";

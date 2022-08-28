@@ -72,7 +72,7 @@ pub fn numeric_binop<F>(vals: &[Value], f: F) -> Result<Value>
 where
     F: FnMut(i64, i64) -> i64,
 {
-    match &vals[..] {
+    match vals {
         [] => Err(Error::NumArgs(2, vec![])),
         [val] => Err(Error::NumArgs(2, vec![val.clone()])),
         _ => {

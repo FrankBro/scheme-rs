@@ -1,4 +1,4 @@
-use std::{fmt::Display, iter::Peekable};
+use std::iter::Peekable;
 
 use crate::{
     error::ParserError,

@@ -1,5 +1,3 @@
-use std::io::{self, BufRead};
-
 use env::Env;
 use eval::eval;
 use parser::parse;

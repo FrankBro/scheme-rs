@@ -1,8 +1,3 @@
-use std::{
-    collections::{hash_map::Entry, HashMap},
-    fmt::Display,
-};
-
 use crate::{
     env::Env,
     error::Error,
@@ -49,7 +44,7 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
         Value::String(_) => Ok(val.clone()),
         Value::Number(_) => Ok(val.clone()),
         Value::Bool(_) => Ok(val.clone()),
-        Value::Atom(id) => env.get_var(&id).cloned(),
+        Value::Atom(id) => env.get_var(id).cloned(),
         Value::List(vals) => match &vals[..] {
             [Value::Atom(atom), val] if atom == QUOTE => Ok(val.clone()),
             [Value::Atom(atom), pred, conseq, alt] if atom == "if" => {
@@ -61,7 +56,7 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
             }
             [Value::Atom(atom), Value::Atom(var), form] if atom == "set!" => {
                 let val = eval(env, form)?;
-                env.set_var(&var, val)
+                env.set_var(var, val)
             }
             [Value::Atom(atom), Value::Atom(var), form] if atom == "define" => {
                 let val = eval(env, form)?;

@@ -2,12 +2,6 @@ use std::fmt::Display;
 
 use logos::{Lexer, Logos};
 
-// fn ident(lex: &mut Lexer<Token>) -> Option<String> {
-//     let slice = lex.slice();
-//     let ident: String = slice[..slice.len()].parse().ok()?;
-//     Some(ident)
-// }
-
 fn lex_string(lex: &mut Lexer<Token>) -> Option<String> {
     let slice = lex.slice();
     let string = slice[1..slice.len() - 1].to_owned();
@@ -72,6 +66,7 @@ pub fn lex(input: &str) -> Vec<Token> {
     tokens
 }
 
+#[cfg(test)]
 mod tests {
     use super::{lex, Token};
 
