@@ -5,21 +5,33 @@ use crate::{error::Error, primitive, value::Value};
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
+pub struct Closure {
+    vars: HashMap<String, usize>,
+}
+
+// TODO: Will grow forever, thought about saving vals.len() and then use vec.truncate
+// but I think we'd lose some captured variables that don't live long enough?
+#[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct Env {
-    vars: HashMap<String, Value>,
+    vals: Vec<Value>,
+    vars: HashMap<String, usize>,
 }
 
 impl Env {
     pub fn get_var(&self, var: &str) -> Result<&Value> {
-        self.vars.get(var).ok_or_else(|| {
-            Error::UnboundVar("Getting an unbound variable".to_owned(), var.to_owned())
-        })
+        match self.vars.get(var) {
+            Some(i) => Ok(&self.vals[*i]),
+            None => Err(Error::UnboundVar(
+                "Getting an unbound variable".to_owned(),
+                var.to_owned(),
+            )),
+        }
     }
 
     pub fn set_var(&mut self, var: &str, val: Value) -> Result<Value> {
-        match self.vars.get_mut(var) {
-            Some(prev) => {
-                *prev = val.clone();
+        match self.vars.get(var) {
+            Some(i) => {
+                self.vals[*i] = val.clone();
                 Ok(val)
             }
             None => Err(Error::UnboundVar(
@@ -30,8 +42,25 @@ impl Env {
     }
 
     pub fn define_var(&mut self, var: String, val: Value) -> Value {
-        self.vars.insert(var, val.clone());
+        let i = self.vals.len();
+        self.vars.insert(var, i);
+        self.vals.push(val.clone());
         val
+    }
+
+    pub fn make_closure(&mut self) -> Closure {
+        let vars = self.vars.clone();
+        Closure { vars }
+    }
+
+    pub fn with_closure(&mut self, closure: &Closure) {
+        for (var, val) in &closure.vars {
+            self.vars.insert(var.to_owned(), *val);
+        }
+    }
+
+    pub fn load_closure(&mut self, closure: Closure) {
+        self.vars = closure.vars;
     }
 
     pub fn primitive_bindings() -> Self {

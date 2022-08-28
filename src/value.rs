@@ -1,6 +1,10 @@
 use std::fmt::Display;
 
-use crate::{env::Env, error::Error, util::intersperse};
+use crate::{
+    env::{Closure, Env},
+    error::Error,
+    util::intersperse,
+};
 
 pub static QUOTE: &str = "quote";
 pub static TRUE: &str = "#t";
@@ -22,7 +26,7 @@ pub enum Value {
         params: Vec<String>,
         vararg: Option<String>,
         body: Vec<Value>,
-        closure: Env,
+        closure: Closure,
     },
 }
 

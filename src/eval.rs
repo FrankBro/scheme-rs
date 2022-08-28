@@ -6,7 +6,7 @@ use crate::{
 
 type Result<T> = std::result::Result<T, Error>;
 
-fn apply(val: &Value, args: &[Value]) -> Result<Value> {
+fn apply(env: &mut Env, val: &Value, args: &[Value]) -> Result<Value> {
     match val {
         Value::PrimitiveFunc(func) => func(args.to_vec()),
         Value::Func {
@@ -18,20 +18,20 @@ fn apply(val: &Value, args: &[Value]) -> Result<Value> {
             if params.len() != args.len() && vararg == &None {
                 return Err(Error::NumArgs(params.len(), args.to_vec()));
             }
-            let mut closure = closure.clone();
+            env.with_closure(closure);
             let mut last = 0;
             for i in 0..params.len() {
                 last = i;
                 let param = &params[i];
                 let arg = &args[i];
-                closure.define_var(param.to_owned(), arg.clone());
+                env.define_var(param.to_owned(), arg.clone());
             }
             if let Some(vararg) = vararg {
-                closure.define_var(vararg.to_owned(), Value::List(args[last..].to_vec()));
+                env.define_var(vararg.to_owned(), Value::List(args[last..].to_vec()));
             }
             let mut ret = None;
             for val in body {
-                ret = Some(eval(&mut closure, val)?);
+                ret = Some(eval(env, val)?);
             }
             ret.ok_or(Error::EmptyBody)
         }
@@ -72,7 +72,7 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
                         ));
                     }
                 };
-                let closure = env.clone();
+                let closure = env.make_closure();
                 let params = args.into_iter().map(|arg| arg.to_string()).collect();
                 let vararg = None;
                 let body = body.to_vec();
@@ -96,7 +96,7 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
                         ));
                     }
                 };
-                let closure = env.clone();
+                let closure = env.make_closure();
                 let params = args.into_iter().map(|arg| arg.to_string()).collect();
                 let vararg = Some(vararg.clone().to_string());
                 let body = body.to_vec();
@@ -109,7 +109,7 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
                 Ok(env.define_var(name, func))
             }
             [Value::Atom(atom), Value::List(params), body @ ..] if atom == "lambda" => {
-                let closure = env.clone();
+                let closure = env.make_closure();
                 let params = params.iter().map(|param| param.to_string()).collect();
                 let vararg = None;
                 let body = body.to_vec();
@@ -123,7 +123,7 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
             [Value::Atom(atom), Value::DottedList(params, vararg), body @ ..]
                 if atom == "lambda" =>
             {
-                let closure = env.clone();
+                let closure = env.make_closure();
                 let params = params.iter().map(|param| param.to_string()).collect();
                 let vararg = Some(vararg.clone().to_string());
                 let body = body.to_vec();
@@ -135,7 +135,7 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
                 })
             }
             [Value::Atom(atom), Value::Atom(vararg), body @ ..] if atom == "lambda" => {
-                let closure = env.clone();
+                let closure = env.make_closure();
                 let params = Vec::new();
                 let vararg = Some(vararg.clone());
                 let body = body.to_vec();
@@ -152,7 +152,10 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
                     .iter()
                     .map(|arg| eval(env, arg))
                     .collect::<Result<Vec<_>>>()?;
-                apply(&func, &args)
+                let closure = env.make_closure();
+                let ret = apply(env, &func, &args);
+                env.load_closure(closure);
+                ret
             }
             _ => Err(Error::BadSpecialForm(
                 "unrecognized special form".to_owned(),
@@ -235,16 +238,14 @@ mod tests {
                 Ok("(lambda (x) ...)"),
             ),
             ("(factorial 10)", Ok("3628800")),
-            // Lisp>>> (define (counter inc) (lambda (x) (set! inc (+ x inc)) inc))
-            // (lambda ("inc") ...)
-            // Lisp>>> (define my-count (counter 5))
-            // (lambda ("x") ...)
-            // Lisp>>> (my-count 3)
-            // 8
-            // Lisp>>> (my-count 6)
-            // 14
-            // Lisp>>> (my-count 5)
-            // 19
+            (
+                "(define (counter inc) (lambda (x) (set! inc (+ x inc)) inc))",
+                Ok("(lambda (inc) ...)"),
+            ),
+            ("(define my-count (counter 5))", Ok("(lambda (x) ...)")),
+            ("(my-count 3)", Ok("8")),
+            ("(my-count 6)", Ok("14")),
+            ("(my-count 5)", Ok("19")),
         ];
         let mut env = Env::primitive_bindings();
         for (input, expected) in cases {
