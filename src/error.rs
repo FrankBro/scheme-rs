@@ -29,7 +29,7 @@ pub enum Error {
     TypeMismatch(String, Value),
     Parser(ParserError),
     BadSpecialForm(String, Value),
-    NotFunction(String, String),
+    NotFunction(Value),
     UnboundVar(String, String),
     EmptyBody,
     IO(io::Error),
@@ -41,7 +41,7 @@ impl Display for Error {
         match self {
             Error::UnboundVar(msg, name) => write!(f, "{}: {}", msg, name),
             Error::BadSpecialForm(msg, form) => write!(f, "{}: {}", msg, form),
-            Error::NotFunction(msg, func) => write!(f, "{}: {}", msg, func),
+            Error::NotFunction(form) => write!(f, "Not a function: {}", form),
             Error::NumArgs(expected, found) => write!(
                 f,
                 "Expected {} args; found values {}",
@@ -66,7 +66,7 @@ impl PartialEq for Error {
             (Self::TypeMismatch(l0, l1), Self::TypeMismatch(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::Parser(l0), Self::Parser(r0)) => l0 == r0,
             (Self::BadSpecialForm(l0, l1), Self::BadSpecialForm(r0, r1)) => l0 == r0 && l1 == r1,
-            (Self::NotFunction(l0, l1), Self::NotFunction(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::NotFunction(l0), Self::NotFunction(r0)) => l0 == r0,
             (Self::UnboundVar(l0, l1), Self::UnboundVar(r0, r1)) => l0 == r0 && l1 == r1,
             (Self::IO(l0), Self::IO(r0)) => l0.kind() == r0.kind(),
             (Self::Port(l0), Self::Port(r0)) => l0 == r0,

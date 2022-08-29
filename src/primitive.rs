@@ -253,7 +253,7 @@ pub fn write_proc(env: &mut Env, vals: &[Value]) -> Result<Value> {
     }
 }
 
-pub fn read_contents(env: &mut Env, vals: &[Value]) -> Result<Value> {
+pub fn read_contents(vals: &[Value]) -> Result<Value> {
     match vals {
         [Value::String(path)] => {
             let lines = std::fs::read_to_string(path).map_err(Error::IO)?;
@@ -268,7 +268,7 @@ pub fn load(path: &str) -> Result<Vec<Value>> {
     parse_exprs(&lines).map_err(Error::Parser)
 }
 
-pub fn read_all(env: &mut Env, vals: &[Value]) -> Result<Value> {
+pub fn read_all(vals: &[Value]) -> Result<Value> {
     match vals {
         [Value::String(path)] => {
             let vals = load(path)?;

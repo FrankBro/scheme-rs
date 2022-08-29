@@ -1,12 +1,11 @@
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::HashMap,
     fs::File,
-    io::{self, BufReader, BufWriter},
+    io::{BufReader, BufWriter},
 };
 
 use crate::{
     error::Error,
-    primitive,
     value::{IOFunc, PrimitiveFunc, Value},
 };
 

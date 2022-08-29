@@ -1,21 +1,10 @@
-use std::{
-    fmt::Display,
-    fs::File,
-    io::{BufReader, BufWriter},
-    rc::Rc,
-};
+use std::fmt::Display;
 
-use crate::{
-    env::{Closure, Env},
-    error::Error,
-    util::intersperse,
-};
+use crate::{env::Closure, util::intersperse};
 
 pub static QUOTE: &str = "quote";
 pub static TRUE: &str = "#t";
 pub static FALSE: &str = "#f";
-
-type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PrimitiveFunc {
