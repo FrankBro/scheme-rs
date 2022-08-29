@@ -1,6 +1,6 @@
 use std::io::{self, BufRead, Write};
 
-use crate::{env::Env, eval::eval, parser::parse};
+use crate::{env::Env, eval::eval, parser::parse_expr};
 
 fn print(line: &str) {
     print!("{}", line);
@@ -17,7 +17,7 @@ pub fn run() {
         if input == "quit" {
             return;
         }
-        match parse(input) {
+        match parse_expr(input) {
             Ok(value) => match eval(&mut env, &value) {
                 Ok(value) => println!("{}", value),
                 Err(e) => println!("Eval error: {}", e),

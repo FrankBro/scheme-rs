@@ -1,6 +1,6 @@
 use env::Env;
 use eval::eval;
-use parser::parse;
+use parser::parse_expr;
 use repl::run;
 
 mod env;
@@ -14,7 +14,7 @@ mod util;
 mod value;
 
 fn run_arg(arg: &str) {
-    match parse(arg) {
+    match parse_expr(arg) {
         Ok(value) => {
             let mut env = Env::primitive_bindings();
             match eval(&mut env, &value) {

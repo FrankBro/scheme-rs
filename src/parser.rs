@@ -57,7 +57,7 @@ fn parse_number<T: Iterator<Item = Token>>(tokens: &mut Peekable<T>) -> Result<V
 
 fn parse_quoted<T: Iterator<Item = Token>>(tokens: &mut Peekable<T>) -> Result<Value> {
     expect_token(Token::Quote, tokens)?;
-    let expr = parse_expr(tokens)?;
+    let expr = parse_expr_impl(tokens)?;
     Ok(Value::List(vec![Value::Atom(QUOTE.to_owned()), expr]))
 }
 
@@ -72,12 +72,12 @@ fn parse_any_list<T: Iterator<Item = Token>>(tokens: &mut Peekable<T>) -> Result
             }
             Some(Token::Dot) => {
                 expect_token(Token::Dot, tokens)?;
-                let last = parse_expr(tokens)?;
+                let last = parse_expr_impl(tokens)?;
                 expect_token(Token::RParen, tokens)?;
                 return Ok(Value::DottedList(values, Box::new(last)));
             }
             Some(_) => {
-                let value = parse_expr(tokens)?;
+                let value = parse_expr_impl(tokens)?;
                 values.push(value);
             }
             None => {
@@ -87,7 +87,7 @@ fn parse_any_list<T: Iterator<Item = Token>>(tokens: &mut Peekable<T>) -> Result
     }
 }
 
-fn parse_expr<T: Iterator<Item = Token>>(tokens: &mut Peekable<T>) -> Result<Value> {
+fn parse_expr_impl<T: Iterator<Item = Token>>(tokens: &mut Peekable<T>) -> Result<Value> {
     match tokens.peek() {
         Some(Token::Atom(_)) => parse_atom(tokens),
         Some(Token::String(_)) => parse_string(tokens),
@@ -99,11 +99,24 @@ fn parse_expr<T: Iterator<Item = Token>>(tokens: &mut Peekable<T>) -> Result<Val
     }
 }
 
-pub fn parse(input: &str) -> Result<Value> {
+pub fn parse_expr(input: &str) -> Result<Value> {
     let mut tokens = lexer::lex(input).into_iter().peekable();
-    let value = parse_expr(&mut tokens)?;
+    let value = parse_expr_impl(&mut tokens)?;
     check_tokens_left(&mut tokens)?;
     Ok(value)
+}
+
+pub fn parse_exprs(input: &str) -> Result<Vec<Value>> {
+    let mut tokens = lexer::lex(input).into_iter().peekable();
+    let mut vals = Vec::new();
+    loop {
+        if None == tokens.peek() {
+            break;
+        }
+        let val = parse_expr_impl(&mut tokens)?;
+        vals.push(val);
+    }
+    Ok(vals)
 }
 
 #[cfg(test)]
@@ -159,7 +172,7 @@ mod tests {
             ("(a '(imbalanced parens)", Err(ParserError::NoMoreTokens)),
         ];
         for (input, expected) in cases {
-            let actual = super::parse(input);
+            let actual = super::parse_expr(input);
             assert_eq!(expected, actual);
         }
     }

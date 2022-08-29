@@ -1,14 +1,25 @@
 use crate::{
     env::Env,
     error::Error,
-    value::{Value, QUOTE},
+    primitive::{self, load},
+    value::{IOFunc, Value, QUOTE},
 };
 
 type Result<T> = std::result::Result<T, Error>;
 
-fn apply(env: &mut Env, val: &Value, args: &[Value]) -> Result<Value> {
+pub fn apply(env: &mut Env, val: &Value, args: &[Value]) -> Result<Value> {
     match val {
         Value::PrimitiveFunc(func) => func(args.to_vec()),
+        Value::IOFunc(func) => match func {
+            IOFunc::Apply => primitive::apply_proc(env, args),
+            IOFunc::MakeReadPort => primitive::make_read_port(env, args),
+            IOFunc::MakeWritePort => primitive::make_write_port(env, args),
+            IOFunc::ClosePort => primitive::close_port(env, args),
+            IOFunc::Read => primitive::read_proc(env, args),
+            IOFunc::Write => primitive::write_proc(env, args),
+            IOFunc::ReadContents => primitive::read_contents(env, args),
+            IOFunc::ReadAll => primitive::read_all(env, args),
+        },
         Value::Func {
             params,
             vararg,
@@ -146,6 +157,14 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
                     closure,
                 })
             }
+            [Value::Atom(atom), Value::String(path)] if atom == "load" => {
+                let vals = load(path)?;
+                let mut ret = None;
+                for val in vals {
+                    ret = Some(eval(env, &val)?);
+                }
+                ret.ok_or(Error::EmptyBody)
+            }
             [func, args @ ..] => {
                 let func = eval(env, func)?;
                 let args = args
@@ -170,12 +189,14 @@ pub fn eval(env: &mut Env, val: &Value) -> Result<Value> {
             body,
             closure,
         } => todo!(),
+        Value::IOFunc(_) => todo!(),
+        Value::Port(_) => todo!(),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{eval::Env, parser::parse, value::Value};
+    use crate::{eval::Env, parser::parse_expr, value::Value};
 
     use super::Error;
 
@@ -246,10 +267,13 @@ mod tests {
             ("(my-count 3)", Ok("8")),
             ("(my-count 6)", Ok("14")),
             ("(my-count 5)", Ok("19")),
+            ("(load \"stdlib.scm\")", Ok("(lambda (pred . lst) ...)")),
+            ("(map (curry + 2) '(1 2 3 4))", Ok("(3 4 5 6)")),
+            ("(filter even? '(1 2 3 4))", Ok("(2 4)")),
         ];
         let mut env = Env::primitive_bindings();
         for (input, expected) in cases {
-            let val = parse(input).unwrap();
+            let val = parse_expr(input).unwrap();
             let actual = super::eval(&mut env, &val).map(|val| val.to_string());
             let expected = expected.map(|str| str.to_owned());
             assert_eq!(expected, actual,);

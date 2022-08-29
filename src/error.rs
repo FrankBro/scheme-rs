@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, io};
 
 use crate::{lexer::Token, util::intersperse, value::Value};
 
@@ -23,7 +23,7 @@ impl Display for ParserError {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Error {
     NumArgs(usize, Vec<Value>),
     TypeMismatch(String, Value),
@@ -31,7 +31,9 @@ pub enum Error {
     BadSpecialForm(String, Value),
     NotFunction(String, String),
     UnboundVar(String, String),
-    EmptyBody, // Default(String),
+    EmptyBody,
+    IO(io::Error),
+    Port(String),
 }
 
 impl Display for Error {
@@ -51,7 +53,24 @@ impl Display for Error {
             }
             Error::Parser(e) => write!(f, "Parse error at {}", e),
             Error::EmptyBody => write!(f, "Function has empty body"),
-            // Error::Default(_) => todo!(),
+            Error::IO(e) => write!(f, "IO error: {}", e),
+            Error::Port(msg) => write!(f, "Port error: {}", msg),
+        }
+    }
+}
+
+impl PartialEq for Error {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::NumArgs(l0, l1), Self::NumArgs(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::TypeMismatch(l0, l1), Self::TypeMismatch(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::Parser(l0), Self::Parser(r0)) => l0 == r0,
+            (Self::BadSpecialForm(l0, l1), Self::BadSpecialForm(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::NotFunction(l0, l1), Self::NotFunction(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::UnboundVar(l0, l1), Self::UnboundVar(r0, r1)) => l0 == r0 && l1 == r1,
+            (Self::IO(l0), Self::IO(r0)) => l0.kind() == r0.kind(),
+            (Self::Port(l0), Self::Port(r0)) => l0 == r0,
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
 }

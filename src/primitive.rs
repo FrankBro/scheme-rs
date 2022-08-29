@@ -1,4 +1,12 @@
-use crate::{error::Error, value::Value};
+use std::io::{stdin, BufRead, Write};
+
+use crate::{
+    env::Env,
+    error::Error,
+    eval::apply,
+    parser::{parse_expr, parse_exprs},
+    value::Value,
+};
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -180,5 +188,92 @@ pub fn equal(vals: &[Value]) -> Result<Value> {
             },
         },
         _ => Err(Error::NumArgs(2, vals.to_vec())),
+    }
+}
+
+pub fn apply_proc(env: &mut Env, vals: &[Value]) -> Result<Value> {
+    match vals {
+        [func, Value::List(args)] => apply(env, func, args),
+        [func, args @ ..] => apply(env, func, args),
+        _ => todo!(),
+    }
+}
+
+pub fn make_read_port(env: &mut Env, vals: &[Value]) -> Result<Value> {
+    match vals {
+        [Value::String(path)] => env.make_read_port(path),
+        _ => todo!(),
+    }
+}
+
+pub fn make_write_port(env: &mut Env, vals: &[Value]) -> Result<Value> {
+    match vals {
+        [Value::String(path)] => env.make_write_port(path),
+        _ => todo!(),
+    }
+}
+
+pub fn close_port(env: &mut Env, vals: &[Value]) -> Result<Value> {
+    match vals {
+        [Value::Port(port_id)] => env.close_port(port_id),
+        _ => Ok(Value::Bool(false)),
+    }
+}
+
+pub fn read_proc(env: &mut Env, vals: &[Value]) -> Result<Value> {
+    match vals {
+        [] => {
+            let mut buf = String::new();
+            stdin().read_line(&mut buf).map_err(Error::IO)?;
+            parse_expr(&buf).map_err(Error::Parser)
+        }
+        [Value::Port(port_id)] => {
+            let reader = env.get_read_port(port_id)?;
+            let mut buf = String::new();
+            reader.read_line(&mut buf).map_err(Error::IO)?;
+            parse_expr(&buf).map_err(Error::Parser)
+        }
+        _ => todo!(),
+    }
+}
+
+pub fn write_proc(env: &mut Env, vals: &[Value]) -> Result<Value> {
+    match vals {
+        [val] => {
+            println!("{}", val);
+            Ok(Value::Bool(true))
+        }
+        [val, Value::Port(port_id)] => {
+            let writer = env.get_write_port(port_id)?;
+            let buf = val.to_string();
+            writer.write_all(buf.as_bytes()).map_err(Error::IO)?;
+            Ok(Value::Bool(true))
+        }
+        _ => todo!(),
+    }
+}
+
+pub fn read_contents(env: &mut Env, vals: &[Value]) -> Result<Value> {
+    match vals {
+        [Value::String(path)] => {
+            let lines = std::fs::read_to_string(path).map_err(Error::IO)?;
+            Ok(Value::String(lines))
+        }
+        _ => todo!(),
+    }
+}
+
+pub fn load(path: &str) -> Result<Vec<Value>> {
+    let lines = std::fs::read_to_string(path).map_err(Error::IO)?;
+    parse_exprs(&lines).map_err(Error::Parser)
+}
+
+pub fn read_all(env: &mut Env, vals: &[Value]) -> Result<Value> {
+    match vals {
+        [Value::String(path)] => {
+            let vals = load(path)?;
+            Ok(Value::List(vals))
+        }
+        _ => todo!(),
     }
 }
