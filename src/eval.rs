@@ -2,14 +2,38 @@ use crate::{
     env::Env,
     error::Error,
     primitive::{self, load},
-    value::{IOFunc, Value, QUOTE},
+    value::{IOFunc, PrimitiveFunc, Value, QUOTE},
 };
 
 type Result<T> = std::result::Result<T, Error>;
 
 pub fn apply(env: &mut Env, val: &Value, args: &[Value]) -> Result<Value> {
     match val {
-        Value::PrimitiveFunc(func) => func(args.to_vec()),
+        Value::PrimitiveFunc(func) => match func {
+            PrimitiveFunc::Add => primitive::numeric_binop(args, |acc, val| acc + val),
+            PrimitiveFunc::Sub => primitive::numeric_binop(args, |acc, val| acc - val),
+            PrimitiveFunc::Mul => primitive::numeric_binop(args, |acc, val| acc * val),
+            PrimitiveFunc::Div => primitive::numeric_binop(args, |acc, val| acc / val),
+            PrimitiveFunc::Rem => primitive::numeric_binop(args, |acc, val| acc % val),
+            PrimitiveFunc::Eq => primitive::numeric_bool_binop(args, |lhs, rhs| lhs == rhs),
+            PrimitiveFunc::Lt => primitive::numeric_bool_binop(args, |lhs, rhs| lhs < rhs),
+            PrimitiveFunc::Gt => primitive::numeric_bool_binop(args, |lhs, rhs| lhs > rhs),
+            PrimitiveFunc::Ne => primitive::numeric_bool_binop(args, |lhs, rhs| lhs != rhs),
+            PrimitiveFunc::Ge => primitive::numeric_bool_binop(args, |lhs, rhs| lhs >= rhs),
+            PrimitiveFunc::Le => primitive::numeric_bool_binop(args, |lhs, rhs| lhs <= rhs),
+            PrimitiveFunc::And => primitive::bool_bool_binop(args, |lhs, rhs| lhs && rhs),
+            PrimitiveFunc::Or => primitive::bool_bool_binop(args, |lhs, rhs| lhs || rhs),
+            PrimitiveFunc::StringEq => primitive::string_bool_binop(args, |lhs, rhs| lhs == rhs),
+            PrimitiveFunc::StringLt => primitive::string_bool_binop(args, |lhs, rhs| lhs < rhs),
+            PrimitiveFunc::StringGt => primitive::string_bool_binop(args, |lhs, rhs| lhs > rhs),
+            PrimitiveFunc::StringLe => primitive::string_bool_binop(args, |lhs, rhs| lhs <= rhs),
+            PrimitiveFunc::StringGe => primitive::string_bool_binop(args, |lhs, rhs| lhs >= rhs),
+            PrimitiveFunc::Car => primitive::car(args),
+            PrimitiveFunc::Cdr => primitive::cdr(args),
+            PrimitiveFunc::Cons => primitive::cons(args),
+            PrimitiveFunc::Eqv => primitive::eqv(args),
+            PrimitiveFunc::Equal => primitive::equal(args),
+        },
         Value::IOFunc(func) => match func {
             IOFunc::Apply => primitive::apply_proc(env, args),
             IOFunc::MakeReadPort => primitive::make_read_port(env, args),

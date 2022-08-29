@@ -7,7 +7,7 @@ use std::{
 use crate::{
     error::Error,
     primitive,
-    value::{IOFunc, Value},
+    value::{IOFunc, PrimitiveFunc, Value},
 };
 
 type Result<T> = std::result::Result<T, Error>;
@@ -122,168 +122,38 @@ impl Env {
 
     pub fn primitive_bindings() -> Self {
         let mut env = Env::default();
-        fn define_primitive_func(env: &mut Env, name: &str, func: fn(Vec<Value>) -> Result<Value>) {
+        fn define_primitive_func(env: &mut Env, name: &str, func: PrimitiveFunc) {
             env.define_var(name.to_owned(), Value::PrimitiveFunc(func));
         }
         fn define_io_func(env: &mut Env, name: &str, func: IOFunc) {
             env.define_var(name.to_owned(), Value::IOFunc(func));
         }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_binop(&vals, |acc, val| acc + val)
-            }
-            define_primitive_func(&mut env, "+", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_binop(&vals, |acc, val| acc - val)
-            }
-            define_primitive_func(&mut env, "-", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_binop(&vals, |acc, val| acc * val)
-            }
-            define_primitive_func(&mut env, "*", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_binop(&vals, |acc, val| acc / val)
-            }
-            define_primitive_func(&mut env, "/", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_binop(&vals, |acc, val| acc % val)
-            }
-            define_primitive_func(&mut env, "mod", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_binop(&vals, |acc, val| acc / val)
-            }
-            define_primitive_func(&mut env, "quotient", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_binop(&vals, |acc, val| acc % val)
-            }
-            define_primitive_func(&mut env, "remainder", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_bool_binop(&vals, |lhs, rhs| lhs == rhs)
-            }
-            define_primitive_func(&mut env, "=", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_bool_binop(&vals, |lhs, rhs| lhs < rhs)
-            }
-            define_primitive_func(&mut env, "<", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_bool_binop(&vals, |lhs, rhs| lhs > rhs)
-            }
-            define_primitive_func(&mut env, ">", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_bool_binop(&vals, |lhs, rhs| lhs != rhs)
-            }
-            define_primitive_func(&mut env, "/=", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_bool_binop(&vals, |lhs, rhs| lhs >= rhs)
-            }
-            define_primitive_func(&mut env, ">=", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::numeric_bool_binop(&vals, |lhs, rhs| lhs <= rhs)
-            }
-            define_primitive_func(&mut env, "<=", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::bool_bool_binop(&vals, |lhs, rhs| lhs && rhs)
-            }
-            define_primitive_func(&mut env, "&&", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::bool_bool_binop(&vals, |lhs, rhs| lhs || rhs)
-            }
-            define_primitive_func(&mut env, "||", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::string_bool_binop(&vals, |lhs, rhs| lhs == rhs)
-            }
-            define_primitive_func(&mut env, "string=?", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::string_bool_binop(&vals, |lhs, rhs| lhs < rhs)
-            }
-            define_primitive_func(&mut env, "string<?", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::string_bool_binop(&vals, |lhs, rhs| lhs > rhs)
-            }
-            define_primitive_func(&mut env, "string>?", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::string_bool_binop(&vals, |lhs, rhs| lhs <= rhs)
-            }
-            define_primitive_func(&mut env, "string<=?", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::string_bool_binop(&vals, |lhs, rhs| lhs >= rhs)
-            }
-            define_primitive_func(&mut env, "string>=?", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::car(&vals)
-            }
-            define_primitive_func(&mut env, "car", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::cdr(&vals)
-            }
-            define_primitive_func(&mut env, "cdr", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::cons(&vals)
-            }
-            define_primitive_func(&mut env, "cons", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::eqv(&vals)
-            }
-            define_primitive_func(&mut env, "eq?", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::eqv(&vals)
-            }
-            define_primitive_func(&mut env, "eqv?", func);
-        }
-        {
-            fn func(vals: Vec<Value>) -> Result<Value> {
-                primitive::equal(&vals)
-            }
-            define_primitive_func(&mut env, "equal?", func);
-        }
+        define_primitive_func(&mut env, "+", PrimitiveFunc::Add);
+        define_primitive_func(&mut env, "-", PrimitiveFunc::Sub);
+        define_primitive_func(&mut env, "*", PrimitiveFunc::Mul);
+        define_primitive_func(&mut env, "/", PrimitiveFunc::Div);
+        define_primitive_func(&mut env, "mod", PrimitiveFunc::Rem);
+        define_primitive_func(&mut env, "quotient", PrimitiveFunc::Div);
+        define_primitive_func(&mut env, "remainder", PrimitiveFunc::Rem);
+        define_primitive_func(&mut env, "=", PrimitiveFunc::Eq);
+        define_primitive_func(&mut env, "<", PrimitiveFunc::Lt);
+        define_primitive_func(&mut env, ">", PrimitiveFunc::Gt);
+        define_primitive_func(&mut env, "/=", PrimitiveFunc::Ne);
+        define_primitive_func(&mut env, ">=", PrimitiveFunc::Ge);
+        define_primitive_func(&mut env, "<=", PrimitiveFunc::Le);
+        define_primitive_func(&mut env, "&&", PrimitiveFunc::And);
+        define_primitive_func(&mut env, "||", PrimitiveFunc::Or);
+        define_primitive_func(&mut env, "string=?", PrimitiveFunc::StringEq);
+        define_primitive_func(&mut env, "string<?", PrimitiveFunc::StringLt);
+        define_primitive_func(&mut env, "string>?", PrimitiveFunc::StringGt);
+        define_primitive_func(&mut env, "string<=?", PrimitiveFunc::StringLe);
+        define_primitive_func(&mut env, "string>=?", PrimitiveFunc::StringGe);
+        define_primitive_func(&mut env, "car", PrimitiveFunc::Car);
+        define_primitive_func(&mut env, "cdr", PrimitiveFunc::Cdr);
+        define_primitive_func(&mut env, "cons", PrimitiveFunc::Cons);
+        define_primitive_func(&mut env, "eq?", PrimitiveFunc::Eqv);
+        define_primitive_func(&mut env, "eqv?", PrimitiveFunc::Eqv);
+        define_primitive_func(&mut env, "equal?", PrimitiveFunc::Equal);
         define_io_func(&mut env, "apply", IOFunc::Apply);
         define_io_func(&mut env, "open-input-file", IOFunc::MakeReadPort);
         define_io_func(&mut env, "open-output-file", IOFunc::MakeWritePort);

@@ -18,6 +18,33 @@ pub static FALSE: &str = "#f";
 type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PrimitiveFunc {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    Eq,
+    Lt,
+    Gt,
+    Ne,
+    Ge,
+    Le,
+    And,
+    Or,
+    StringEq,
+    StringLt,
+    StringGt,
+    StringLe,
+    StringGe,
+    Car,
+    Cdr,
+    Cons,
+    Eqv,
+    Equal,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IOFunc {
     Apply,
     MakeReadPort,
@@ -37,7 +64,7 @@ pub enum Value {
     Number(i64),
     String(String),
     Bool(bool),
-    PrimitiveFunc(fn(Vec<Value>) -> Result<Value>),
+    PrimitiveFunc(PrimitiveFunc),
     Func {
         params: Vec<String>,
         vararg: Option<String>,
